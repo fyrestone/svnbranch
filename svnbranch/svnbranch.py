@@ -29,7 +29,7 @@ from six import iteritems, itervalues, iterkeys
 from six import PY3
 
 _DEBUG = False  # if value is True, gevent concurrency will be disabled
-_LOCAL_TMP_DIR = False  # the place to exec co-propset-ci operation, if True use current work dir else use system tmp dir
+_LOCAL_TMP_DIR = True  # the place to exec co-propset-ci operation, if True use current work dir else use system tmp dir
 _CONFIG_FILE_VERSION = 1  # a number to distinguish different versions of config file
 _UUID_FORMATTER = u'{uuid}'
 _LOG_FORMAT = u'%(asctime)-8s [%(filename)s] %(message)s'
@@ -426,7 +426,9 @@ class BranchOperation(object):
         _logger.info(u'[cmd] ' + cmd)
         if test:
             return
-        ret = os.system(cmd.encode(locale.getpreferredencoding()))
+        if not PY3:
+            cmd = cmd.encode(locale.getpreferredencoding())
+        ret = os.system(cmd)
         if ret != 0:
             raise BranchOperationException(u'Exec cmd failed, ret value: %s.', ret)
 
@@ -526,7 +528,7 @@ class BranchOperation(object):
                 BranchOperation._system_cmd(cmd, test)
 
                 # write to file and use -F to avoid encoding problems
-                with tempfile.NamedTemporaryFile(dir=tmp_root_dir) as fp:
+                with tempfile.NamedTemporaryFile(dir=tmp_root_dir, delete=False) as fp:
                     branch_data = u'\n'.join(external_lines)
                     _logger.info(u"List svn:externals of %s from %s:\n%s", branch_url, fp.name, branch_data)
                     fp.write(branch_data.encode('utf-8'))
@@ -537,10 +539,11 @@ class BranchOperation(object):
                 cmd = u'svn ci -m "%s" "%s"' % (comment, temp_dir)
                 BranchOperation._system_cmd(cmd, test)
         finally:
-            try:
-                shutil.rmtree(tmp_root_dir, ignore_errors=True)
-            except:
-                pass
+            if not _DEBUG:
+                try:
+                    shutil.rmtree(tmp_root_dir, ignore_errors=True)
+                except:
+                    pass
 
         _logger.info(u'Create branch success!')
 
