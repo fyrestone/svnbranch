@@ -180,16 +180,16 @@ class RemoteExternals(object):
         def _real_get_repo_url():
             cmd = u'svn info --non-interactive --xml "%s"' % url
             data, err = cls._safe_popen(cmd)
-            return cls._parse_info_xml(data, u'root')
+            return Utils.norm_url(cls._parse_info_xml(data, u'root'))
 
         def _memo_get_repo_url():
-            for repo_url in cache:
-                if url.startswith(repo_url):
-                    return repo_url
+            for norm_repo_url in cache:
+                if url.startswith(norm_repo_url):
+                    return norm_repo_url
 
-            repo_url = _real_get_repo_url()
-            cache.add(repo_url)
-            return repo_url
+            norm_repo_url = _real_get_repo_url()
+            cache.add(norm_repo_url)
+            return norm_repo_url
 
         if cache is None:
             return _real_get_repo_url()
@@ -311,7 +311,6 @@ class RemoteExternals(object):
         elif external_url[
              :2] == '^/':  # Relative to the root of the repository in which the svn:externals property is versioned
             repo_url = cls.get_repo_url(current_url)
-            repo_url = Utils.norm_url(repo_url)
             return urlparse.urljoin(repo_url, external_url[2:])
         elif external_url[
              :2] == '//':  # Relative to the scheme of the URL of the directory on which the svn:externals property is set
@@ -450,7 +449,6 @@ class BranchOperation(object):
 
         for u in sorted(url_set):
             repo_url = RemoteExternals.get_repo_url(u, repo_cache)
-            repo_url = Utils.norm_url(repo_url)
             if repo_url and u.startswith(repo_url):
                 url_path = u[len(repo_url):]
                 repo_branch = merged_urls.setdefault(repo_url, {})
@@ -492,19 +490,25 @@ class BranchOperation(object):
         repo_cache = set()  # optimize for get_repo_url
 
         for path, external_info in iteritems(external_cache):
+            path_repo_url = RemoteExternals.get_repo_url(path, repo_cache)
             mapped_path = BranchOperation._apply_branch_map(path, branch_map)
             branch_externals.setdefault(mapped_path, [])
 
             for external_dir, (external_url, peg_rev, opt_rev) in iteritems(external_info):
                 external_abs_url = RemoteExternals.resolve_relative_external_url(path, external_url)
                 repo_url = RemoteExternals.get_repo_url(external_abs_url, repo_cache)
-                repo_url = Utils.norm_url(repo_url)
                 external_abs_url = BranchOperation._apply_branch_map(external_abs_url, branch_map)
-                if repo_url and external_abs_url.startswith(repo_url):
+
+                # if external link to the same repository, use relative external url
+                if repo_url == path_repo_url and external_abs_url.startswith(repo_url):
                     external_relative_url = external_abs_url[len(repo_url) - 1:]
                     external_relative_url = '^' + external_relative_url  # relative to the root of the repository
                     external_line = RemoteExternals.build_external_line(
                         external_dir, external_relative_url, peg_rev, opt_rev)
+                    branch_externals[mapped_path].append(external_line)
+                else:  # else use absolute external url
+                    external_line = RemoteExternals.build_external_line(
+                        external_dir, external_abs_url, peg_rev, opt_rev)
                     branch_externals[mapped_path].append(external_line)
 
         _logger.info(u'Create branch copy...')
@@ -741,7 +745,13 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    operation = getattr(BranchOperation, args.operation)
+    # args will be an empty Namespace object in Python 3
+    operation = getattr(args, 'operation', None)
+    if not operation:
+        parser.print_help()
+        sys.exit(0)
+
+    operation = getattr(BranchOperation, operation)
     try:
         operation(**args.__dict__)
     except BranchOperationException as ex:
