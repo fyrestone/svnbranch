@@ -299,7 +299,7 @@ class RemoteExternals(object):
         return ' '.join([opt_rev, external_url, external_dir]).strip()
 
     @classmethod
-    def resolve_relative_external_url(cls, current_url, external_url):
+    def resolve_external_url(cls, current_url, external_url):
         # refer to: http://svnbook.red-bean.com/nightly/en/svn.advanced.externals.html
         # svn_wc__resolve_relative_external_url from externals.c
 
@@ -333,7 +333,7 @@ class RemoteExternals(object):
             _logger.info(u"List svn:externals of %s:\n%s", path, data)
             for line in data.splitlines():
                 external_dir, external_url, peg_rev, opt_rev = cls._parse_external_line(line)
-                external_abs_url = cls.resolve_relative_external_url(path, external_url)
+                external_abs_url = cls.resolve_external_url(path, external_url)
                 item = ExternalItem(line, external_url, external_abs_url, peg_rev, opt_rev)
                 cls._data.setdefault(path, {}).setdefault(external_dir, item)
                 if recursive:
@@ -396,7 +396,7 @@ class RemoteExternals(object):
             _logger.info(u"List svn:externals of %s:\n%s", path, data)
             for line in data.splitlines():
                 external_dir, external_url, peg_rev, opt_rev = cls._parse_external_line(line)
-                external_abs_url = cls.resolve_relative_external_url(path, external_url)
+                external_abs_url = cls.resolve_external_url(path, external_url)
                 item = ExternalItem(line, external_url, external_abs_url, peg_rev, opt_rev)
                 cls._data.setdefault(path, {}).setdefault(external_dir, item)
 
@@ -444,7 +444,9 @@ class BranchOperation(object):
         for path, external_info in iteritems(externals):
             url_set.add(path)
             for external_item in itervalues(external_info):
-                url_set.add(external_item.external_abs_url)
+                if not external_item.peg_rev and not external_item.opt_rev:
+                    # only externals without specific revisions can be mapped
+                    url_set.add(external_item.external_abs_url)
 
         merged_urls = {}
         repo_cache = set()  # optimize for get_repo_url
@@ -478,7 +480,7 @@ class BranchOperation(object):
         external_cache = config.get(_CONFIG_KEY_EXTERNAL_CACHE)
         if external_cache:
             _logger.info(u'Using external cache from config.')
-        elif external_cache is not None:  # although external_cache == {}, the external cache already exists, skip scan external_cache
+        elif external_cache is not None:  # the external cache already exists (empty), skip scan external_cache
             _logger.info(u'Found empty external cache from config. ')
         else:  # external_cache is None, no _CONFIG_KEY_EXTERNAL_CACHE is found in config, rescan external_cache
             url_list = config.get(_CONFIG_KEY_URL_LIST, [])
@@ -497,13 +499,16 @@ class BranchOperation(object):
             branch_externals.setdefault(mapped_path, [])
 
             for external_dir, (external_url, peg_rev, opt_rev) in iteritems(external_info):
-                external_abs_url = RemoteExternals.resolve_relative_external_url(path, external_url)
-                repo_url = RemoteExternals.get_repo_url(external_abs_url, repo_cache)
-                external_abs_url = BranchOperation._apply_branch_map(external_abs_url, branch_map)
+                external_abs_url = RemoteExternals.resolve_external_url(path, external_url)
+                external_repo_url = RemoteExternals.get_repo_url(external_abs_url, repo_cache)
 
-                # if external link to the same repository, use relative external url
-                if repo_url == path_repo_url and external_abs_url.startswith(repo_url):
-                    external_relative_url = external_abs_url[len(repo_url) - 1:]
+                if not peg_rev and not opt_rev:
+                    # only external with no specific revisions can be mapped to a new url
+                    external_abs_url = BranchOperation._apply_branch_map(external_abs_url, branch_map)
+
+                # if externals link to the same repository, use relative external url
+                if external_repo_url == path_repo_url and external_abs_url.startswith(external_repo_url):
+                    external_relative_url = external_abs_url[len(external_repo_url) - 1:]
                     external_relative_url = '^' + external_relative_url  # relative to the root of the repository
                     external_line = RemoteExternals.build_external_line(
                         external_dir, external_relative_url, peg_rev, opt_rev)
@@ -587,7 +592,7 @@ class BranchOperation(object):
             externals = RemoteExternals.get_from_local(url_or_path_list)
             url_or_path_list = [RemoteExternals.get_url(p) for p in url_or_path_list]
         else:
-            raise BranchOperationException(u'Unexpect type {}'.format(input_type))
+            raise BranchOperationException(u'Unknown type {}'.format(input_type))
 
         config_dict = {
             _CONFIG_KEY_VERSION: _CONFIG_FILE_VERSION,
@@ -730,7 +735,9 @@ if __name__ == '__main__':
     sp.add_argument('-m', '--comment', type=Utils.to_unicode, default=default_comment,
                     help='create branch comment, default is "%s"' % default_comment)
     sp.add_argument('-uid', '--uuid', type=Utils.to_unicode, default=default_uuid,
-                    help='unique string to distinguish different branches, used to fill the {uuid} formatter in branch URL, default is the datetime string, for example: %s' % default_uuid)
+                    help='unique string to distinguish different branches, '
+                         'used to fill the {uuid} formatter in branch URL, '
+                         'default is the datetime string, for example: %s' % default_uuid)
     sp.add_argument('-t', '--test', default=False, action='store_true',
                     help='only print svn operations, no effect on target svn repository')
 
@@ -740,7 +747,8 @@ if __name__ == '__main__':
     sp.add_argument('config', type=Utils.validate_json,
                     help='config file to delete branch (json format)')
     sp.add_argument('uuid', type=Utils.to_unicode,
-                    help='unique string to identify which branch to delete, used to fill the {uuid} formatter in branch URL')
+                    help='unique string to identify which branch to delete, '
+                         'used to fill the {uuid} formatter in branch URL')
     sp.add_argument('-m', '--comment', type=Utils.to_unicode, default=default_comment,
                     help='branch comment, default is "%s"' % default_comment)
     sp.add_argument('-t', '--test', default=False, action='store_true',
