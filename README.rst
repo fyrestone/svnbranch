@@ -34,7 +34,7 @@ Usage
 
 1. It auto scans externals from one or more URLs or local copy, and create a config template contains externals information. 
 
-	`$ svnbranch create_config D:\Tmp\sample\trunk\src
+	`$ svnbranch create_config D:\Tmp\sample\trunk\src`
 	
 	will get a config_template.json in the working directory, for example:
 	
@@ -80,9 +80,9 @@ Usage
 
 3. Create branches or delete branches with your config, add -t to simulate the operation.
 
-	`$ svnbranch create_branch conf/my_branch.json -t
+	`$ svnbranch create_branch conf/my_branch.json -t`
 	
-	`$ svnbranch delete_branch conf/my_branch.json 20180121T1557 -t
+	`$ svnbranch delete_branch conf/my_branch.json 20180121T1557 -t`
 
 
 Repository
