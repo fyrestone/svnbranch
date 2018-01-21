@@ -672,7 +672,7 @@ class Utils(object):
         if n != -1:
             m = url.find(u'/', n + len(item))
             if m != -1:
-                return Utils.norm_url(url[:m])
+                return url[:m]  # must not normalize the result URL in order to preserve the {uuid} formatter
         return url
 
     @staticmethod
