@@ -34,55 +34,55 @@ Usage
 
 1. It auto scans externals from one or more URLs or local copy, and create a config template contains externals information. 
 
-	`$ svnbranch create_config D:\Tmp\sample\trunk\src`
-	
-	will get a config_template.json in the working directory, for example:
-	
-	.. code-block:: json
-	
-		{
-			"branch_map": {
-				"https://hqc-pc:12000/svn/sample/": {
-					"trunk/README.md": "", 
-					"trunk/src/": "", 
-					"trunk/third_party": ""
-				}
-			}, 
-			"external_cache": {
-				"...": "..."
-			}, 
-			"url_list": [
-				"..."
-			], 
-			"version": 1
-		}
+    `$ svnbranch create_config D:\\Tmp\\sample\\trunk\\src`
+
+    will get a config_template.json in the working directory, for example:
+
+    .. code-block:: json
+
+        {
+            "branch_map": {
+                "https://hqc-pc:12000/svn/sample/": {
+                    "trunk/README.md": "",
+                    "trunk/src/": "",
+                    "trunk/third_party": ""
+                }
+            },
+            "external_cache": {
+                "...": "..."
+            },
+            "url_list": [
+                "..."
+            ],
+            "version": 1
+        }
 
 
 2. Customize your config.
-	
-	Define branch_map, and the result config file like this:
-	
-	.. code-block:: json
-		
-		{
-			"branch_map": {
-				"https://hqc-pc:12000/svn/sample/": {
-					"trunk/README.md": "branches/bak_{uuid}/README.md",
-					"trunk/src/": "/branches/bak_{uuid}/src",
-					"trunk/third_party": "branches/bak_{uuid}/3rdparty"
-				}
-			},
-			"...": "..."
-		}
-		
-	The {uuid} is will be replaced by -uid, --uuid argument of create_branch sub command,
-	
+
+    Define branch_map, and the result config file like this:
+
+    .. code-block:: json
+
+        {
+            "branch_map": {
+                "https://hqc-pc:12000/svn/sample/": {
+                    "trunk/README.md": "branches/bak_{uuid}/README.md",
+                    "trunk/src/": "/branches/bak_{uuid}/src",
+                    "trunk/third_party": "branches/bak_{uuid}/3rdparty"
+                }
+            },
+            "...": "..."
+        }
+
+    The {uuid} is will be replaced by -uid, --uuid argument of create_branch sub command,
+
 
 3. Create branches or delete branches with your config, add -t to simulate the operation.
 
-	`$ svnbranch create_branch conf/my_branch.json -t`
-	
-	`$ svnbranch delete_branch conf/my_branch.json 20180121T1557 -t`
+    `$ svnbranch create_branch conf/my_branch.json -t`
+
+    `$ svnbranch delete_branch conf/my_branch.json 20180121T1557 -t`
 
 
 Repository
