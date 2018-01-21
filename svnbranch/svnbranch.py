@@ -34,7 +34,7 @@ _CONFIG_FILE_VERSION = 1  # a number to distinguish different versions of config
 _UUID_FORMATTER = u'{uuid}'
 _LOG_FORMAT = u'%(asctime)-8s [%(filename)s] %(message)s'
 
-_TYPE_URL = 'url type'
+_TYPE_URL = 'URL type'
 _TYPE_LOCAL = 'local path type'
 
 _CONFIG_KEY_VERSION = u'version'
@@ -266,7 +266,7 @@ class RemoteExternals(object):
         token1_is_url = Utils.is_url(external_parts[1])
 
         if token0_is_url and token1_is_url:
-            raise Exception(u'Found two url in one external line, invalid value: {}'.format(external_line))
+            raise Exception(u'Found two URLs in one external line, invalid value: {}'.format(external_line))
         if 0 == opt_idx and token1_is_url:
             err_msg = u'Cannot use a URL as the target directory for an external definition, invalid value: {}'
             raise Exception(err_msg.format(external_line))
@@ -304,23 +304,28 @@ class RemoteExternals(object):
         # svn_wc__resolve_relative_external_url from externals.c
 
         if Utils.is_url(external_url):
-            return external_url
+            return Utils.norm_url(external_url)
 
-        if external_url[:3] == '../':  # Relative to the URL of the directory on which the svn:externals property is set
-            return urlparse.urljoin(current_url, external_url)
-        elif external_url[
-             :2] == '^/':  # Relative to the root of the repository in which the svn:externals property is versioned
+        if external_url[:3] == '../':
+            # Relative to the URL of the directory on which the svn:externals property is set
+            result = urlparse.urljoin(current_url, external_url)
+        elif external_url[:2] == '^/':
+            # Relative to the root of the repository in which the svn:externals property is versioned
             repo_url = cls.get_repo_url(current_url)
-            return urlparse.urljoin(repo_url, external_url[2:])
-        elif external_url[
-             :2] == '//':  # Relative to the scheme of the URL of the directory on which the svn:externals property is set
+            result = urlparse.urljoin(repo_url, external_url[2:])
+        elif external_url[:2] == '//':
+            # Relative to the scheme of the URL of the directory on which the svn:externals property is set
             parse = urlparse.urlparse(current_url)
-            return parse.scheme + ':' + external_url
-        elif external_url[
-            0] == '/':  # Relative to the root URL of the server on which the svn:externals property is versioned
+            result = parse.scheme + ':' + external_url
+        elif external_url[0] == '/':
+            # Relative to the root URL of the server on which the svn:externals property is versioned
             parse = urlparse.urlparse(current_url)
             data = (parse.scheme, parse.netloc or parse.path, external_url, parse.params, parse.query, parse.fragment)
-            return urlparse.urlunparse(data)
+            result = urlparse.urlunparse(data)
+        else:
+            raise BranchOperationException(u'Unknown external URL format: {}'.format(external_url))
+
+        return Utils.norm_url(result)
 
     @classmethod
     def _get_externals(cls, cmd, recursive=False):
@@ -689,7 +694,7 @@ class Utils(object):
                 return InputTarget(_TYPE_URL, Utils.norm_url(input_target))
         except:
             pass
-        err_msg = u'URL "%s" should be a valid url or an existing path.' % input_target
+        err_msg = u'"%s" should be a valid URL or an existing path.' % input_target
         raise argparse.ArgumentTypeError(err_msg)
 
     @staticmethod
