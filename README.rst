@@ -60,7 +60,7 @@ Usage
 
 2. Customize your config.
 
-    Define branch_map, and the result config file like this:
+    Define branch_map, and the result config file looks like this:
 
     .. code-block:: json
 
@@ -75,7 +75,7 @@ Usage
             "...": "..."
         }
 
-    The {uuid} is will be replaced by -uid, --uuid argument of create_branch sub command,
+    - The {uuid} is will be replaced by -uid, --uuid argument of create_branch sub command.
 
 
 3. Create branches or delete branches with your config, add -t to simulate the operation.
