@@ -2,11 +2,11 @@
     "branch_map": {
         "https://hqc-pc:12000/svn/demo/": {
             "D/": "", 
-            "E": ""
+            "E/": ""
         }, 
         "https://hqc-pc:12000/svn/sample/": {
             "A/": "", 
-            "B": ""
+            "B/": ""
         }
     }, 
     "external_cache": {
