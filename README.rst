@@ -1,7 +1,7 @@
 svnbranch
 ==============
 
-This is a lightweight svn branch tool with externals support. 
+A lightweight svn branch tool with externals support. 
 
 features
 --------------
@@ -43,9 +43,9 @@ Usage
         {
             "branch_map": {
                 "https://hqc-pc:12000/svn/sample/": {
-                    "trunk/README.md": "",
+                    "trunk/README.md/": "",
                     "trunk/src/": "",
-                    "trunk/third_party": ""
+                    "trunk/third_party/": ""
                 }
             },
             "external_cache": {
@@ -67,9 +67,9 @@ Usage
         {
             "branch_map": {
                 "https://hqc-pc:12000/svn/sample/": {
-                    "trunk/README.md": "branches/bak_{uuid}/README.md",
+                    "trunk/README.md/": "branches/bak_{uuid}/README.md",
                     "trunk/src/": "/branches/bak_{uuid}/src",
-                    "trunk/third_party": "branches/bak_{uuid}/3rdparty"
+                    "trunk/third_party/": "branches/bak_{uuid}/3rdparty"
                 }
             },
             "...": "..."
