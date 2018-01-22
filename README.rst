@@ -67,7 +67,7 @@ Usage
         {
             "branch_map": {
                 "https://hqc-pc:12000/svn/sample/": {
-                    "trunk/README.md/": "branches/bak_{uuid}/README.md",
+                    "trunk/README.md/": "branches/bak_{uuid}/README.md",
                     "trunk/src/": "/branches/bak_{uuid}/src",
                     "trunk/third_party/": "branches/bak_{uuid}/3rdparty"
                 }
