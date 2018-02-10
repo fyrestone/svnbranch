@@ -99,6 +99,51 @@ class BranchOperationException(Exception):
         super(BranchOperationException, self).__init__(message)
 
 
+class CmdDecorator(object):
+    GLOBAL_PARAMS = None
+
+    def __init__(self, fn):
+        self._func = fn
+
+    def __call__(self, cmd, *args, **kwargs):
+        if self.GLOBAL_PARAMS:
+            target = '--non-interactive'
+            cmd = cmd.replace(target, ' '.join([self.GLOBAL_PARAMS, target]))
+        return self._func(cmd, *args, **kwargs)
+
+    @classmethod
+    def parse_global_option(cls, **kwargs):
+        params = []
+
+        def _decorate_key(k):
+            return '--' + k.replace('_', '-')
+
+        def _decorate_value(v):
+            return '"' + v + '"'
+
+        def _build_arg(key):
+            value = kwargs.get(key)
+            if value:
+                params.append(_decorate_key(key))
+                params.append(_decorate_value(value))
+
+        for k in ['username', 'password', 'config_dir', 'config_option']:
+            _build_arg(k)
+
+        def _build_action(key):
+            value = kwargs.get(key)
+            if value:
+                params.append(_decorate_key(key))
+
+        for k in ['no_auth_cache']:
+            _build_action(k)
+
+        if params:
+            cls.GLOBAL_PARAMS = ' '.join([str(p) for p in params])
+        else:
+            cls.GLOBAL_PARAMS = ''
+
+
 ExternalItem = collections.namedtuple(
     'ExternalItem',
     ['external_line', 'external_url', 'external_abs_url', 'peg_rev', 'opt_rev'])
@@ -110,6 +155,7 @@ class RemoteExternals(object):
     _data = {}
 
     @staticmethod
+    @CmdDecorator
     def _safe_popen(cmd):
         while True:
             try:
@@ -427,6 +473,7 @@ class RemoteExternals(object):
 
 class BranchOperation(object):
     @staticmethod
+    @CmdDecorator
     def _system_cmd(cmd, test=False):
         _logger.info(u'[cmd] ' + cmd)
         if test:
@@ -730,6 +777,18 @@ if __name__ == '__main__':
                     help='target svn URL list or local path list to create config file')
     sp.add_argument('-o', '--output', type=Utils.to_unicode, default='config_template.json',
                     help='output config file, default is config_template.json')
+    sp.add_argument('-u', '--username', type=Utils.to_unicode,
+                    help='<svn ARG> specify a username ARG')
+    sp.add_argument('-p', '--password', type=Utils.to_unicode,
+                    help='<svn ARG> specify a password ARG (caution: on many operating systems, '
+                         'other users will be able to see this)')
+    sp.add_argument('--config-dir', type=Utils.to_unicode,
+                    help='<svn ARG> read user configuration files from directory ARG')
+    sp.add_argument('--config-option', type=Utils.to_unicode,
+                    help='<svn ARG> set user configuration option in the format: FILE:SECTION:OPTION=[VALUE], '
+                         'For example: servers:global:http-library=serf')
+    sp.add_argument('--no-auth-cache', default=False, action='store_true',
+                    help='<svn ARG> do not cache authentication tokens')
 
     sp = sub_parsers.add_parser(BranchOperation.create_branch.__name__)
     default_comment = '[%s] by %s' % (BranchOperation.create_branch.__name__, program_name)
@@ -745,6 +804,18 @@ if __name__ == '__main__':
                          'default is the datetime string, for example: %s' % default_uuid)
     sp.add_argument('-t', '--test', default=False, action='store_true',
                     help='only print svn operations, no effect on target svn repository')
+    sp.add_argument('-u', '--username', type=Utils.to_unicode,
+                    help='<svn ARG> specify a username ARG')
+    sp.add_argument('-p', '--password', type=Utils.to_unicode,
+                    help='<svn ARG> specify a password ARG (caution: on many operating systems, '
+                         'other users will be able to see this)')
+    sp.add_argument('--config-dir', type=Utils.to_unicode,
+                    help='<svn ARG> read user configuration files from directory ARG')
+    sp.add_argument('--config-option', type=Utils.to_unicode,
+                    help='<svn ARG> set user configuration option in the format: FILE:SECTION:OPTION=[VALUE], '
+                         'For example: servers:global:http-library=serf')
+    sp.add_argument('--no-auth-cache', default=False, action='store_true',
+                    help='<svn ARG> do not cache authentication tokens')
 
     sp = sub_parsers.add_parser(BranchOperation.delete_branch.__name__)
     default_comment = '[%s] by %s' % (BranchOperation.delete_branch.__name__, program_name)
@@ -758,6 +829,18 @@ if __name__ == '__main__':
                     help='branch comment, default is "%s"' % default_comment)
     sp.add_argument('-t', '--test', default=False, action='store_true',
                     help='only print svn operations, no effect on target svn repository')
+    sp.add_argument('-u', '--username', type=Utils.to_unicode,
+                    help='<svn ARG> specify a username ARG')
+    sp.add_argument('-p', '--password', type=Utils.to_unicode,
+                    help='<svn ARG> specify a password ARG (caution: on many operating systems, '
+                         'other users will be able to see this)')
+    sp.add_argument('--config-dir', type=Utils.to_unicode,
+                    help='<svn ARG> read user configuration files from directory ARG')
+    sp.add_argument('--config-option', type=Utils.to_unicode,
+                    help='<svn ARG> set user configuration option in the format: FILE:SECTION:OPTION=[VALUE], '
+                         'For example: servers:global:http-library=serf')
+    sp.add_argument('--no-auth-cache', default=False, action='store_true',
+                    help='<svn ARG> do not cache authentication tokens')
 
     args = parser.parse_args()
 
@@ -769,6 +852,7 @@ if __name__ == '__main__':
 
     operation = getattr(BranchOperation, operation)
     try:
+        CmdDecorator.parse_global_option(**args.__dict__)
         operation(**args.__dict__)
     except BranchOperationException as ex:
         _logger.error(u'[%s] %s' % (BranchOperationException.__name__, ex))
