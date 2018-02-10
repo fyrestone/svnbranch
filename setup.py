@@ -31,5 +31,6 @@ if __name__ == '__main__':
                   'svnbranch = svnbranch:main',
               ],
           },
+          install_requires=['gevent', 'url-normalize', 'six'],
           test_suite='tests',
           zip_safe=False)
