@@ -1,4 +1,26 @@
 # -*- coding: utf-8 -*-
+# MIT License
+#
+# Copyright (c) 2018 fyrestone (https://github.com/fyrestone/svnbranch)
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 __author__ = 'fyrestone'
 __email__ = 'fyrestone@outlook.com'
 __version__ = '1.0'
@@ -57,7 +79,10 @@ class NoUnicodeEscapeStreamHandler(logging.StreamHandler):
 
 
 def _get_logger():
-    logger = logging.getLogger(os.path.basename(__file__))
+    try:
+        logger = logging.getLogger(os.path.basename(__file__))
+    except NameError:
+        logger = logging.getLogger('svnbranch')
     logger.setLevel(logging.DEBUG if _DEBUG else logging.INFO)
     if len(logger.handlers) == 0:
         stream_handler = NoUnicodeEscapeStreamHandler()
@@ -766,7 +791,7 @@ class Utils(object):
         return s
 
 
-if __name__ == '__main__':
+def main():
     program_name = os.path.basename(__file__)
     parser = ArgParser(
         description='%s v%s: A simple svn branch tool with externals support.' % (program_name, __version__))
@@ -857,3 +882,7 @@ if __name__ == '__main__':
     except BranchOperationException as ex:
         _logger.error(u'[%s] %s' % (BranchOperationException.__name__, ex))
         sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()
