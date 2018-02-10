@@ -794,9 +794,7 @@ class Utils(object):
 def main():
     program_name = os.path.basename(__file__)
     parser = ArgParser(
-        description='%s: A simple svn branch tool with externals support.' % program_name)
-    parser.add_argument('-v', '--version', default=False, action='store_true',
-                        help='print version number')
+        description='%s %s: A simple svn branch tool with externals support.' % (program_name, __version__))
 
     sub_parsers = parser.add_subparsers(help='branch operations')
     sp = sub_parsers.add_parser(BranchOperation.create_config.__name__)
@@ -871,11 +869,6 @@ def main():
                     help='<svn ARG> do not cache authentication tokens')
 
     args = parser.parse_args()
-
-    version = getattr(args, 'version', False)
-    if version:
-        print('%s v%s' % (program_name, __version__))
-        sys.exit(0)
 
     # args will be an empty Namespace object in Python 3
     operation = getattr(args, 'operation', None)
