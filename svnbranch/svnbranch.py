@@ -23,7 +23,7 @@
 
 __author__ = 'fyrestone'
 __email__ = 'fyrestone@outlook.com'
-__version__ = '1.0'
+__version__ = '1.1'
 
 import shlex
 import argparse
